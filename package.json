@@ -1,0 +1,72 @@
+{
+  "name": "n8n-nodes-vapiai",
+  "version": "1.0.9",
+  "description": "n8n community nodes for Vapi voice AI platform",
+  "keywords": [
+    "n8n",
+    "n8n-community-node-package",
+    "vapi",
+    "voice-ai",
+    "calls",
+    "assistant",
+    "vapi ai",
+    "vapi n8n",
+    "n8n vapi",
+    "n8n node vapi",
+    "n8n vapi node",
+    "ai voice agent",
+    "voice agent",
+    "ai calling",
+    "voice bot",
+    "ai phone calls",
+    "twilio alternative",
+    "ai call automation"
+  ],
+  "license": "MIT",
+  "homepage": "https://www.npmjs.com/package/n8n-nodes-vapiai",
+  "author": {
+    "name": "mitrax24"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mitrax24/n8n-nodes-vapiai.git"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "postbuild": "copyfiles -u 0 \"nodes/**/*.svg\" dist/",
+    "dev": "tsc --watch",
+    "format": "prettier nodes credentials --write",
+    "lint": "eslint nodes credentials --ext .ts",
+    "lint:fix": "eslint nodes credentials --ext .ts --fix",
+    "prepublishOnly": "npm run build && npm run lint"
+  },
+  "files": [
+    "dist"
+  ],
+  "n8n": {
+    "n8nNodesApiVersion": 1,
+    "nodes": [
+      "dist/nodes/Vapi/Vapi.node.js",
+      "dist/nodes/VapiTrigger/VapiTrigger.node.js"
+    ],
+    "credentials": [
+      "dist/credentials/VapiApi.credentials.js"
+    ]
+  },
+  "devDependencies": {
+    "@types/node": "^18.16.0",
+    "@typescript-eslint/eslint-plugin": "^6.7.0",
+    "@typescript-eslint/parser": "^6.7.0",
+    "copyfiles": "^2.4.1",
+    "eslint": "^8.49.0",
+    "eslint-plugin-n8n-nodes-base": "^1.16.1",
+    "n8n-workflow": "*",
+    "prettier": "^3.0.3",
+    "typescript": "^5.1.6"
+  },
+  "peerDependencies": {
+    "n8n-workflow": "*"
+  }
+}
