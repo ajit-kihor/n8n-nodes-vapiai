@@ -6,6 +6,44 @@ import {
 	IWebhookResponseData,
 } from 'n8n-workflow';
 
+const eventOptions = [
+	{ name: 'All Events', value: '*' },
+	{ name: 'Assistant Request', value: 'assistant-request' },
+	{ name: 'Assistant Speech Started', value: 'assistant.speechStarted' },
+	{ name: 'Assistant Started', value: 'assistant.started' },
+	{ name: 'Call Deleted', value: 'call.deleted' },
+	{ name: 'Call Delete Failed', value: 'call.delete.failed' },
+	{ name: 'Call Endpointing Request', value: 'call.endpointing.request' },
+	{ name: 'Campaign Predial', value: 'campaign.predial' },
+	{ name: 'Chat Created', value: 'chat.created' },
+	{ name: 'Chat Deleted', value: 'chat.deleted' },
+	{ name: 'Conversation Update', value: 'conversation-update' },
+	{ name: 'End of Call Report', value: 'end-of-call-report' },
+	{ name: 'Function Call', value: 'function-call' },
+	{ name: 'Hang', value: 'hang' },
+	{ name: 'Handoff Destination Request', value: 'handoff-destination-request' },
+	{ name: 'Knowledge Base Request', value: 'knowledge-base-request' },
+	{ name: 'Language Change Detected', value: 'language-change-detected' },
+	{ name: 'Metadata', value: 'metadata' },
+	{ name: 'Model Output', value: 'model-output' },
+	{ name: 'Phone Call Control', value: 'phone-call-control' },
+	{ name: 'Session Created', value: 'session.created' },
+	{ name: 'Session Deleted', value: 'session.deleted' },
+	{ name: 'Session Updated', value: 'session.updated' },
+	{ name: 'Speech Update', value: 'speech-update' },
+	{ name: 'Status Update', value: 'status-update' },
+	{ name: 'Tool Calls', value: 'tool-calls' },
+	{ name: 'Tool Calls Result', value: 'tool-calls-result' },
+	{ name: 'Transcript', value: 'transcript' },
+	{ name: 'Transcript Final', value: 'transcript[transcriptType="final"]' },
+	{ name: 'Transfer Destination Request', value: 'transfer-destination-request' },
+	{ name: 'Transfer Update', value: 'transfer-update' },
+	{ name: 'User Interrupted', value: 'user-interrupted' },
+	{ name: 'Voice Input', value: 'voice-input' },
+	{ name: 'Voice Request', value: 'voice-request' },
+	{ name: 'Workflow Node Started', value: 'workflow.node.started' },
+];
+
 export class VapiTrigger implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'Vapi Trigger',
@@ -32,28 +70,16 @@ export class VapiTrigger implements INodeType {
 				displayName: 'Event Types',
 				name: 'events',
 				type: 'multiOptions',
-				options: [
-					{ name: 'All Events', value: '*' },
-					{ name: 'Assistant Started', value: 'assistant.started' },
-					{ name: 'Conversation Update', value: 'conversation-update' },
-					{ name: 'End of Call Report', value: 'end-of-call-report' },
-					{ name: 'Function Call', value: 'function-call' },
-					{ name: 'Handoff Destination Request', value: 'handoff-destination-request' },
-					{ name: 'Speech Update', value: 'speech-update' },
-					{ name: 'Status Update', value: 'status-update' },
-					{ name: 'Tool Calls', value: 'tool-calls' },
-					{ name: 'Transfer Destination Request', value: 'transfer-destination-request' },
-					{ name: 'User Interrupted', value: 'user-interrupted' },
-				],
+				options: eventOptions,
 				default: ['*'],
-				description: 'Which Vapi event types to accept. Select "All Events" to receive everything.',
+				description: 'Which Vapi event types to accept. Select All Events to receive every current and future event.',
 			},
 			{
 				displayName: 'Verify Secret Header',
 				name: 'verifySecret',
 				type: 'boolean',
 				default: false,
-				description: 'Whether to validate a shared secret header sent by Vapi',
+				description: 'Whether to validate a shared secret header sent by Vapi before accepting the webhook.',
 			},
 			{
 				displayName: 'Header Name',
@@ -61,7 +87,7 @@ export class VapiTrigger implements INodeType {
 				type: 'string',
 				default: 'x-vapi-signature',
 				displayOptions: { show: { verifySecret: [true] } },
-				description: 'Name of the HTTP header that carries the shared secret',
+				description: 'Name of the HTTP header that carries the shared secret.',
 			},
 			{
 				displayName: 'Expected Value',
@@ -70,7 +96,7 @@ export class VapiTrigger implements INodeType {
 				typeOptions: { password: true },
 				default: '',
 				displayOptions: { show: { verifySecret: [true] } },
-				description: 'Expected value of the secret header',
+				description: 'Expected value of the secret header.',
 			},
 		],
 	};
@@ -79,7 +105,6 @@ export class VapiTrigger implements INodeType {
 		const req = this.getRequestObject();
 		const res = this.getResponseObject();
 
-		// ── Secret verification ────────────────────────────────────────────────
 		const verifySecret = this.getNodeParameter('verifySecret', false) as boolean;
 
 		if (verifySecret) {
@@ -95,31 +120,34 @@ export class VapiTrigger implements INodeType {
 		}
 
 		const body = req.body as IDataObject;
-
-		// ── Event filter ───────────────────────────────────────────────────────
+		const messageType = getEventType(body);
 		const events = this.getNodeParameter('events', ['*']) as string[];
-		if (!events.includes('*') && events.length > 0) {
-			const messageType = (body.message as IDataObject)?.type as string | undefined
-				?? body.type as string | undefined;
 
-			if (messageType && !events.includes(messageType)) {
-				// Event not selected – acknowledge silently and drop
-				res.status(200).json({ received: true });
-				return { workflowData: [] };
-			}
+		if (!events.includes('*') && events.length > 0 && messageType && !events.includes(messageType)) {
+			res.status(200).json({ received: true });
+			return { workflowData: [] };
 		}
 
-		// ── Respond to Vapi ────────────────────────────────────────────────────
 		res.status(200).json({ received: true });
 
 		return {
 			workflowData: [
 				[
 					{
-						json: body,
+						json: {
+							type: messageType,
+							...body,
+						},
 					},
 				],
 			],
 		};
 	}
+}
+
+function getEventType(body: IDataObject): string | undefined {
+	const message = body.message as IDataObject | undefined;
+	if (typeof message?.type === 'string') return message.type;
+	if (typeof body.type === 'string') return body.type;
+	return undefined;
 }
