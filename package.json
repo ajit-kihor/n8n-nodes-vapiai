@@ -25,11 +25,11 @@
   "license": "MIT",
   "homepage": "https://www.npmjs.com/package/n8n-nodes-vapiai",
   "author": {
-    "name": "mitrax24"
+    "name": "Ajit Kihor"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mitrax24/n8n-nodes-vapiai.git"
+    "url": "git+https://github.com/ajit-kihor/n8n-nodes-vapiai.git"
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
