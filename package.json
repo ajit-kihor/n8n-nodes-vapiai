@@ -25,7 +25,8 @@
   "license": "MIT",
   "homepage": "https://www.npmjs.com/package/n8n-nodes-vapiai",
   "author": {
-    "name": "Ajit Kihor"
+    "name": "Ajit Kihor",
+    "email": "ajitahir999@gmail.com"
   },
   "repository": {
     "type": "git",

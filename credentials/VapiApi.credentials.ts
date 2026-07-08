@@ -4,6 +4,14 @@ export class VapiApi implements ICredentialType {
 	name = 'vapiApi';
 	displayName = 'Vapi API';
 	documentationUrl = 'https://docs.vapi.ai/api-reference';
+	authenticate = {
+		type: 'generic' as const,
+		properties: {
+			headers: {
+				Authorization: '=Bearer {{$credentials.apiKey}}',
+			},
+		},
+	};
 
 	properties: INodeProperties[] = [
 		{

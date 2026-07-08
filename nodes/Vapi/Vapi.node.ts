@@ -226,9 +226,6 @@ export class Vapi implements INodeType {
 		const items = this.getInputData();
 		const returnData: INodeExecutionData[] = [];
 
-		const credentials = await this.getCredentials('vapiApi');
-		const apiKey = credentials.apiKey as string;
-
 		for (let i = 0; i < items.length; i++) {
 			const resource = this.getNodeParameter('resource', i) as string;
 			const operation = this.getNodeParameter('operation', i) as string;
@@ -259,7 +256,6 @@ export class Vapi implements INodeType {
 				}
 
 				const headers: IDataObject = {
-					Authorization: `Bearer ${apiKey}`,
 					Accept: 'application/json',
 				};
 
@@ -281,7 +277,7 @@ export class Vapi implements INodeType {
 					requestOptions.body = request.body;
 				}
 
-				const responseData = await this.helpers.httpRequest(requestOptions);
+				const responseData = await this.helpers.httpRequestWithAuthentication.call(this, 'vapiApi', requestOptions);
 				pushResponse(returnData, responseData);
 			} catch (error) {
 				const errorDetails = formatVapiError(error);
