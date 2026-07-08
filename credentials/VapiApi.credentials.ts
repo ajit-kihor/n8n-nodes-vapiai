@@ -1,4 +1,4 @@
-import { ICredentialType, INodeProperties } from 'n8n-workflow';
+import { ICredentialTestRequest, ICredentialType, INodeProperties } from 'n8n-workflow';
 
 export class VapiApi implements ICredentialType {
 	name = 'vapiApi';
@@ -9,6 +9,15 @@ export class VapiApi implements ICredentialType {
 		properties: {
 			headers: {
 				Authorization: '=Bearer {{$credentials.apiKey}}',
+			},
+		},
+	};
+	test: ICredentialTestRequest = {
+		request: {
+			method: 'GET',
+			url: 'https://api.vapi.ai/assistant',
+			qs: {
+				limit: 1,
 			},
 		},
 	};
