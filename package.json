@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-vapiai",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "description": "n8n community nodes for Vapi voice AI platform",
   "keywords": [
     "n8n",
@@ -40,6 +40,7 @@
     "format": "prettier nodes credentials --write",
     "lint": "eslint nodes credentials --ext .ts",
     "lint:fix": "eslint nodes credentials --ext .ts --fix",
+    "release": "n8n-node release",
     "test": "npm run build && node test/node-description.test.js",
     "prepublishOnly": "npm run build && npm run lint"
   },
@@ -58,13 +59,14 @@
     ]
   },
   "devDependencies": {
+    "@n8n/node-cli": "^0.38.7",
     "@types/node": "^18.16.0",
     "@typescript-eslint/eslint-plugin": "^6.7.0",
     "@typescript-eslint/parser": "^6.7.0",
     "copyfiles": "^2.4.1",
     "eslint": "^8.49.0",
     "eslint-plugin-n8n-nodes-base": "^1.16.1",
-    "n8n-workflow": "*",
+    "n8n-workflow": "2.16.0",
     "prettier": "^3.0.3",
     "typescript": "^5.1.6"
   },

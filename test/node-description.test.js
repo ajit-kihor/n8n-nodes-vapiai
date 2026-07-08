@@ -32,6 +32,7 @@ function getResourceOperations(node, resource) {
 }
 
 const vapi = new Vapi();
+assert.strictEqual(vapi.description.icon, 'file:vapi-icon.svg');
 assert(getResourceOperations(vapi, 'call').includes('update'));
 assert(getResourceOperations(vapi, 'call').includes('deleteData'));
 assert(getResourceOperations(vapi, 'phoneNumber').includes('update'));
@@ -109,6 +110,7 @@ Promise.resolve(fileUpdate).then((request) => {
 	assert.strictEqual(codeTool.body.timeoutSeconds, 15);
 
 	const trigger = new VapiTrigger();
+	assert.strictEqual(trigger.description.icon, 'file:vapi.svg');
 	const eventProperty = trigger.description.properties.find((property) => property.name === 'events');
 	const eventValues = eventProperty.options.map((option) => option.value);
 	assert(eventValues.includes('*'));

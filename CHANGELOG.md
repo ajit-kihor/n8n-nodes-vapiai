@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.11
+
+- Changed the main Vapi node icon filename to force n8n production installs to fetch the refreshed icon instead of a cached old wordmark.
+
 ## 1.0.10
 
 - Added Calls `Update` and `Delete Data` operations.

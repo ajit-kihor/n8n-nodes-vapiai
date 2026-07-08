@@ -89,7 +89,7 @@ export class Vapi implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'Vapi',
 		name: 'vapi',
-		icon: 'file:vapi.svg',
+		icon: 'file:vapi-icon.svg',
 		group: ['transform'],
 		version: 1,
 		subtitle: '={{$parameter["resource"] + ": " + $parameter["operation"]}}',
