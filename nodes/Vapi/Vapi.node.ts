@@ -6,6 +6,8 @@ import {
 	INodeType,
 	INodeTypeDescription,
 	IHttpRequestOptions,
+	JsonObject,
+	NodeApiError,
 	NodeOperationError,
 } from 'n8n-workflow';
 
@@ -285,10 +287,7 @@ export class Vapi implements INodeType {
 					returnData.push({ json: errorDetails, pairedItem: i });
 					continue;
 				}
-				throw new NodeOperationError(this.getNode(), errorDetails.message as string, {
-					itemIndex: i,
-					description: JSON.stringify(errorDetails, null, 2),
-				});
+				throw new NodeApiError(this.getNode(), error as JsonObject, { itemIndex: i });
 			}
 		}
 

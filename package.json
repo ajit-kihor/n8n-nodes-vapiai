@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-vapiai",
-  "version": "1.0.14",
+  "version": "1.0.15",
   "description": "n8n community nodes for Vapi voice AI platform",
   "keywords": [
     "n8n",

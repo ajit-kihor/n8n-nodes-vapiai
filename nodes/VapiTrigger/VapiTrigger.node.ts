@@ -101,6 +101,20 @@ export class VapiTrigger implements INodeType {
 		],
 	};
 
+	webhookMethods = {
+		default: {
+			async checkExists(): Promise<boolean> {
+				return true;
+			},
+			async create(): Promise<boolean> {
+				return true;
+			},
+			async delete(): Promise<boolean> {
+				return true;
+			},
+		},
+	};
+
 	async webhook(this: IWebhookFunctions): Promise<IWebhookResponseData> {
 		const req = this.getRequestObject();
 		const res = this.getResponseObject();

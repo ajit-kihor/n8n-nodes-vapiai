@@ -208,6 +208,8 @@ Use **Phone Number -> Update** with `provider` set to `twilio` and server fields
 3. Set it as the Server URL in Vapi at the org, assistant, phone number, or tool level
 4. Optionally enable **Verify Secret Header**
 
+Webhook registration is manual: n8n exposes the URL, and you copy it into the Vapi dashboard. The trigger does not create or delete Vapi server URLs automatically.
+
 The trigger supports **All Events** mode. In this mode every Vapi event is forwarded to n8n and the output includes a normalized `json.type` field so you can branch with an IF or Switch node.
 
 Common event types include:
