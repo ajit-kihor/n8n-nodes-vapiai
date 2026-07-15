@@ -75,19 +75,19 @@ export class VapiTrigger implements INodeType {
 				description: 'Which Vapi event types to accept. Select All Events to receive every current and future event.',
 			},
 			{
-				displayName: 'Verify Secret Header',
+				displayName: 'Verify Shared Secret Header',
 				name: 'verifySecret',
 				type: 'boolean',
 				default: false,
-				description: 'Whether to validate a shared secret header sent by Vapi before accepting the webhook.',
+				description: 'Whether to compare Vapi\'s shared secret header before accepting the webhook. This does not perform HMAC signature verification.',
 			},
 			{
 				displayName: 'Header Name',
 				name: 'secretHeaderName',
 				type: 'string',
-				default: 'x-vapi-signature',
+				default: 'x-vapi-secret',
 				displayOptions: { show: { verifySecret: [true] } },
-				description: 'Name of the HTTP header that carries the shared secret.',
+				description: 'Name of the HTTP header carrying the shared secret. Vapi uses X-Vapi-Secret for legacy inline secrets.',
 			},
 			{
 				displayName: 'Expected Value',
@@ -122,7 +122,7 @@ export class VapiTrigger implements INodeType {
 		const verifySecret = this.getNodeParameter('verifySecret', false) as boolean;
 
 		if (verifySecret) {
-			const headerName = (this.getNodeParameter('secretHeaderName', 'x-vapi-signature') as string).toLowerCase();
+			const headerName = (this.getNodeParameter('secretHeaderName', 'x-vapi-secret') as string).toLowerCase();
 			const expected = this.getNodeParameter('secretHeaderValue', '') as string;
 			const actual = req.headers[headerName] as string | string[] | undefined;
 

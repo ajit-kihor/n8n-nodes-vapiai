@@ -901,7 +901,7 @@ export class VapiTrigger implements INodeType {
     ],
     properties: [
       {
-        displayName: 'Verify Secret Header',
+        displayName: 'Verify Shared Secret Header',
         name: 'verifySecret',
         type: 'boolean',
         default: false,
@@ -910,7 +910,7 @@ export class VapiTrigger implements INodeType {
         displayName: 'Header Name',
         name: 'secretHeaderName',
         type: 'string',
-        default: 'x-vapi-signature',
+        default: 'x-vapi-secret',
         displayOptions: { show: { verifySecret: [true] } },
       },
       {

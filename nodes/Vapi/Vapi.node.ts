@@ -71,15 +71,15 @@ const toolTypeOptions = [
 	{ name: 'Query', value: 'query' },
 	{ name: 'MCP', value: 'mcp' },
 	{ name: 'Voicemail', value: 'voicemail' },
-	{ name: 'Slack Send Message', value: 'slack.sendMessage' },
+	{ name: 'Slack Send Message', value: 'slack.message.send' },
 	{ name: 'SMS', value: 'sms' },
-	{ name: 'GoHighLevel Calendar Availability', value: 'gohighlevel.calendarAvailability' },
-	{ name: 'GoHighLevel Calendar Event Create', value: 'gohighlevel.calendarEventCreate' },
-	{ name: 'GoHighLevel Contact Create', value: 'gohighlevel.contactCreate' },
-	{ name: 'GoHighLevel Contact Get', value: 'gohighlevel.contactGet' },
-	{ name: 'Google Calendar Create Event', value: 'google.calendar.createEvent' },
-	{ name: 'Google Calendar Check Availability', value: 'google.calendar.checkAvailability' },
-	{ name: 'Google Sheets Row Append', value: 'google.sheets.rowAppend' },
+	{ name: 'GoHighLevel Calendar Availability', value: 'gohighlevel.calendar.availability.check' },
+	{ name: 'GoHighLevel Calendar Event Create', value: 'gohighlevel.calendar.event.create' },
+	{ name: 'GoHighLevel Contact Create', value: 'gohighlevel.contact.create' },
+	{ name: 'GoHighLevel Contact Get', value: 'gohighlevel.contact.get' },
+	{ name: 'Google Calendar Create Event', value: 'google.calendar.event.create' },
+	{ name: 'Google Calendar Check Availability', value: 'google.calendar.availability.check' },
+	{ name: 'Google Sheets Row Append', value: 'google.sheets.row.append' },
 	{ name: 'SIP Request', value: 'sipRequest' },
 	{ name: 'Bash', value: 'bash' },
 	{ name: 'Computer', value: 'computer' },
@@ -651,7 +651,7 @@ function toolProperties(): INodeProperties[] {
 			name: 'functionDefinition',
 			type: 'json',
 			default: '{"name":"get_weather","description":"Get current weather for a location","parameters":{"type":"object","properties":{"location":{"type":"string","description":"City name"}},"required":["location"]}}',
-			displayOptions: { show: { resource: ['tool'], operation: ['create', 'update'], toolType: ['function', 'code', 'apiRequest'] } },
+			displayOptions: { show: { resource: ['tool'], operation: ['create', 'update'], toolType: ['function', 'code'] } },
 			description: 'Function schema using JSON Schema semantics.',
 		},
 		{
@@ -659,8 +659,27 @@ function toolProperties(): INodeProperties[] {
 			name: 'serverUrl',
 			type: 'string',
 			default: '',
-			displayOptions: { show: { resource: ['tool'], operation: ['create', 'update'], toolType: ['function', 'apiRequest'] } },
+			displayOptions: { show: { resource: ['tool'], operation: ['create', 'update'], toolType: ['function'] } },
 			description: 'Webhook server URL for tool-calls messages.',
+		},
+		{
+			displayName: 'HTTP Method',
+			name: 'apiRequestMethod',
+			type: 'options',
+			options: ['POST', 'GET', 'PUT', 'PATCH', 'DELETE'].map((value) => ({ name: value, value })),
+			default: 'POST',
+			displayOptions: { show: { resource: ['tool'], operation: ['create', 'update'], toolType: ['apiRequest'] } },
+			description: 'HTTP method used by the API request tool.',
+		},
+		{
+			displayName: 'Request URL',
+			name: 'apiRequestUrl',
+			type: 'string',
+			default: '',
+			required: true,
+			placeholder: 'https://api.example.com/resource',
+			displayOptions: { show: { resource: ['tool'], operation: ['create', 'update'], toolType: ['apiRequest'] } },
+			description: 'URL called by the API request tool.',
 		},
 		{
 			displayName: 'Code (TypeScript)',
@@ -698,6 +717,14 @@ function toolProperties(): INodeProperties[] {
 						'google.calendar.checkAvailability',
 						'google.sheets.rowAppend',
 						'slack.sendMessage',
+						'gohighlevel.calendar.availability.check',
+						'gohighlevel.calendar.event.create',
+						'gohighlevel.contact.create',
+						'gohighlevel.contact.get',
+						'google.calendar.event.create',
+						'google.calendar.availability.check',
+						'google.sheets.row.append',
+						'slack.message.send',
 					],
 				},
 			},
@@ -719,7 +746,11 @@ function toolProperties(): INodeProperties[] {
 			default: {},
 			displayOptions: { show: { resource: ['tool'], operation: ['create', 'update'] } },
 			options: [
+				{ displayName: 'Name', name: 'name', type: 'string', default: '', description: 'Tool name passed to the model.' },
+				{ displayName: 'Description', name: 'description', type: 'string', default: '', description: 'Description that tells the model when to use this tool.' },
 				{ displayName: 'Async', name: 'async', type: 'boolean', default: false },
+				{ displayName: 'Body Schema (JSON)', name: 'body', type: 'json', default: '', description: 'JSON Schema for the API request body.' },
+				{ displayName: 'Headers Schema (JSON)', name: 'headers', type: 'json', default: '', description: 'JSON Schema describing headers sent by the API request tool.' },
 				{ displayName: 'Messages (JSON Array)', name: 'messages', type: 'json', default: '' },
 				{ displayName: 'Parameters (JSON Array)', name: 'parameters', type: 'json', default: '' },
 				{ displayName: 'Server (JSON)', name: 'server', type: 'json', default: '', description: 'Full server object. Overrides Server URL.' },
@@ -1167,25 +1198,31 @@ export async function buildFileRequest(
 
 function buildToolBody(this: IExecuteFunctions, i: number, toolType: string, additionalFields: IDataObject): IDataObject {
 	const body: IDataObject = {};
-	if (toolType !== 'custom') {
-		body.type = toolType;
+	const normalizedToolType = normalizeToolType(toolType);
+	if (normalizedToolType !== 'custom') {
+		body.type = normalizedToolType;
 	}
 
-	if (['function', 'code', 'apiRequest'].includes(toolType)) {
+	if (['function', 'code'].includes(normalizedToolType)) {
 		const functionDefinition = this.getNodeParameter('functionDefinition', i, '') as string;
 		if (functionDefinition) {
 			body.function = parseJsonParameter(functionDefinition, 'Function Definition') as IDataObject[string];
 		}
 	}
 
-	if (['function', 'apiRequest'].includes(toolType)) {
+	if (normalizedToolType === 'function') {
 		const serverUrl = this.getNodeParameter('serverUrl', i, '') as string;
 		if (serverUrl) {
 			body.server = { url: serverUrl };
 		}
 	}
 
-	if (toolType === 'code') {
+	if (normalizedToolType === 'apiRequest') {
+		body.method = this.getNodeParameter('apiRequestMethod', i, 'POST') as string;
+		body.url = this.getNodeParameter('apiRequestUrl', i) as string;
+	}
+
+	if (normalizedToolType === 'code') {
 		addIfSet(body, 'code', this.getNodeParameter('code', i, '') as string);
 		addIfSet(body, 'timeoutSeconds', this.getNodeParameter('timeoutSeconds', i, 10) as number);
 	}
@@ -1199,9 +1236,23 @@ function buildToolBody(this: IExecuteFunctions, i: number, toolType: string, add
 	if (Object.prototype.hasOwnProperty.call(additionalFields, 'async')) {
 		body.async = additionalFields.async;
 	}
-	mergeKnownFields(body, additionalFields, ['messages', 'parameters', 'server']);
+	mergeKnownFields(body, additionalFields, ['name', 'description', 'body', 'headers', 'messages', 'parameters', 'server']);
 
 	return body;
+}
+
+function normalizeToolType(toolType: string): string {
+	const legacyAliases: Record<string, string> = {
+		'gohighlevel.calendarAvailability': 'gohighlevel.calendar.availability.check',
+		'gohighlevel.calendarEventCreate': 'gohighlevel.calendar.event.create',
+		'gohighlevel.contactCreate': 'gohighlevel.contact.create',
+		'gohighlevel.contactGet': 'gohighlevel.contact.get',
+		'google.calendar.createEvent': 'google.calendar.event.create',
+		'google.calendar.checkAvailability': 'google.calendar.availability.check',
+		'google.sheets.rowAppend': 'google.sheets.row.append',
+		'slack.sendMessage': 'slack.message.send',
+	};
+	return legacyAliases[toolType] ?? toolType;
 }
 
 function buildServerObject(fields: IDataObject): IDataObject | undefined {
@@ -1232,7 +1283,7 @@ function looksLikeJsonField(key: string): boolean {
 		'assistant', 'assistantOverrides', 'customer', 'customers', 'phoneNumber', 'squad',
 		'squadOverrides', 'workflow', 'workflowOverrides', 'model', 'voice', 'analysisPlan',
 		'artifactPlan', 'hooks', 'metadata', 'monitorPlan', 'observabilityPlan', 'server',
-		'fallbackDestination', 'members', 'membersOverrides', 'messages', 'parameters',
+		'fallbackDestination', 'members', 'membersOverrides', 'messages', 'parameters', 'body', 'headers',
 	].includes(key);
 }
 

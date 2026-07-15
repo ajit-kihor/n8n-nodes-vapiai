@@ -109,6 +109,29 @@ Promise.resolve(fileUpdate).then((request) => {
 	assert.strictEqual(codeTool.body.type, 'code');
 	assert.strictEqual(codeTool.body.timeoutSeconds, 15);
 
+	const apiRequestTool = buildToolRequest.call(fakeContext({
+		toolType: 'apiRequest',
+		apiRequestMethod: 'PATCH',
+		apiRequestUrl: 'https://api.example.com/resource',
+		additionalFields: {
+			name: 'update_resource',
+			body: '{"type":"object","properties":{"status":{"type":"string"}}}',
+		},
+		integrationFields: {},
+	}), 0, 'create');
+	assert.strictEqual(apiRequestTool.body.type, 'apiRequest');
+	assert.strictEqual(apiRequestTool.body.method, 'PATCH');
+	assert.strictEqual(apiRequestTool.body.url, 'https://api.example.com/resource');
+	assert.strictEqual(apiRequestTool.body.name, 'update_resource');
+	assert.deepStrictEqual(apiRequestTool.body.body, { type: 'object', properties: { status: { type: 'string' } } });
+
+	const legacySlackTool = buildToolRequest.call(fakeContext({
+		toolType: 'slack.sendMessage',
+		additionalFields: {},
+		integrationFields: {},
+	}), 0, 'create');
+	assert.strictEqual(legacySlackTool.body.type, 'slack.message.send');
+
 	const trigger = new VapiTrigger();
 	assert.strictEqual(trigger.description.icon, 'file:vapi.svg');
 	const eventProperty = trigger.description.properties.find((property) => property.name === 'events');
@@ -117,6 +140,8 @@ Promise.resolve(fileUpdate).then((request) => {
 	assert(eventValues.includes('workflow.node.started'));
 	assert(eventValues.includes('transfer-update'));
 	assert(eventValues.includes('call.deleted'));
+	const secretHeaderProperty = trigger.description.properties.find((property) => property.name === 'secretHeaderName');
+	assert.strictEqual(secretHeaderProperty.default, 'x-vapi-secret');
 
 	console.log('All node description/request-builder tests passed.');
 }).catch((error) => {
