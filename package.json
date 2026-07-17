@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-vapiai",
-  "version": "1.0.16",
+  "version": "1.0.17",
   "description": "n8n community nodes for Vapi voice AI platform",
   "keywords": [
     "n8n",
@@ -36,7 +36,7 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "postbuild": "copyfiles -u 0 \"nodes/**/*.svg\" dist/",
+    "postbuild": "copyfiles -u 0 \"nodes/**/*.svg\" \"credentials/**/*.svg\" dist/",
     "dev": "tsc --watch",
     "format": "prettier nodes credentials --write",
     "lint": "eslint nodes credentials --ext .ts",

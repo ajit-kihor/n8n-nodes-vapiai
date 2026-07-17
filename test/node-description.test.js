@@ -8,6 +8,7 @@ const {
 	buildToolRequest,
 } = require('../dist/nodes/Vapi/Vapi.node.js');
 const { VapiTrigger } = require('../dist/nodes/VapiTrigger/VapiTrigger.node.js');
+const { VapiApi } = require('../dist/credentials/VapiApi.credentials.js');
 
 function fakeContext(parameters) {
 	return {
@@ -33,6 +34,7 @@ function getResourceOperations(node, resource) {
 
 const vapi = new Vapi();
 assert.strictEqual(vapi.description.icon, 'file:vapi-icon.svg');
+assert.strictEqual(new VapiApi().icon, 'file:vapi-icon.svg');
 assert(getResourceOperations(vapi, 'call').includes('update'));
 assert(getResourceOperations(vapi, 'call').includes('deleteData'));
 assert(getResourceOperations(vapi, 'phoneNumber').includes('update'));
@@ -134,6 +136,7 @@ Promise.resolve(fileUpdate).then((request) => {
 
 	const trigger = new VapiTrigger();
 	assert.strictEqual(trigger.description.icon, 'file:vapi.svg');
+	assert.strictEqual(trigger.description.subtitle, '={{$parameter["events"].join(", ")}}');
 	const eventProperty = trigger.description.properties.find((property) => property.name === 'events');
 	const eventValues = eventProperty.options.map((option) => option.value);
 	assert(eventValues.includes('*'));
@@ -142,6 +145,31 @@ Promise.resolve(fileUpdate).then((request) => {
 	assert(eventValues.includes('call.deleted'));
 	const secretHeaderProperty = trigger.description.properties.find((property) => property.name === 'secretHeaderName');
 	assert.strictEqual(secretHeaderProperty.default, 'x-vapi-secret');
+	const secretValueProperty = trigger.description.properties.find((property) => property.name === 'secretHeaderValue');
+	assert.strictEqual(secretValueProperty.typeOptions.password, true);
+
+	const toolAdditionalFields = vapi.description.properties.find(
+		(property) => property.name === 'additionalFields' && property.displayOptions?.show?.resource?.includes('tool'),
+	);
+	assert.deepStrictEqual(toolAdditionalFields.options.map((option) => option.displayName), [
+		'Async',
+		'Body Schema (JSON)',
+		'Description',
+		'Headers Schema (JSON)',
+		'Messages (JSON Array)',
+		'Name',
+		'Parameters (JSON Array)',
+		'Raw Body (JSON)',
+		'Server (JSON)',
+	]);
+
+	assert.throws(
+		() => buildCallRequest.call(fakeContext({
+			additionalFields: { rawBody: '{invalid-json' },
+			schedulePlan: {},
+		}), 0, 'create'),
+		(error) => error.constructor.name === 'NodeOperationError',
+	);
 
 	console.log('All node description/request-builder tests passed.');
 }).catch((error) => {

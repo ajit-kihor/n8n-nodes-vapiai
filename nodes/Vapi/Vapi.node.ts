@@ -8,6 +8,7 @@ import {
 	IHttpRequestOptions,
 	JsonObject,
 	NodeApiError,
+	NodeConnectionTypes,
 	NodeOperationError,
 } from 'n8n-workflow';
 
@@ -99,8 +100,8 @@ export class Vapi implements INodeType {
 		defaults: {
 			name: 'Vapi',
 		},
-		inputs: ['main'],
-		outputs: ['main'],
+		inputs: [NodeConnectionTypes.Main],
+		outputs: [NodeConnectionTypes.Main],
 		credentials: [
 			{
 				name: 'vapiApi',
@@ -286,6 +287,9 @@ export class Vapi implements INodeType {
 				if (this.continueOnFail()) {
 					returnData.push({ json: errorDetails, pairedItem: i });
 					continue;
+				}
+				if (error instanceof NodeOperationError) {
+					throw error;
 				}
 				throw new NodeApiError(this.getNode(), error as JsonObject, { itemIndex: i });
 			}
@@ -746,15 +750,15 @@ function toolProperties(): INodeProperties[] {
 			default: {},
 			displayOptions: { show: { resource: ['tool'], operation: ['create', 'update'] } },
 			options: [
-				{ displayName: 'Name', name: 'name', type: 'string', default: '', description: 'Tool name passed to the model.' },
-				{ displayName: 'Description', name: 'description', type: 'string', default: '', description: 'Description that tells the model when to use this tool.' },
 				{ displayName: 'Async', name: 'async', type: 'boolean', default: false },
-				{ displayName: 'Body Schema (JSON)', name: 'body', type: 'json', default: '', description: 'JSON Schema for the API request body.' },
-				{ displayName: 'Headers Schema (JSON)', name: 'headers', type: 'json', default: '', description: 'JSON Schema describing headers sent by the API request tool.' },
+				{ displayName: 'Body Schema (JSON)', name: 'body', type: 'json', default: '', description: 'JSON Schema for the API request body' },
+				{ displayName: 'Description', name: 'description', type: 'string', default: '', description: 'Description that tells the model when to use this tool' },
+				{ displayName: 'Headers Schema (JSON)', name: 'headers', type: 'json', default: '', description: 'JSON Schema describing headers sent by the API request tool' },
 				{ displayName: 'Messages (JSON Array)', name: 'messages', type: 'json', default: '' },
+				{ displayName: 'Name', name: 'name', type: 'string', default: '', description: 'Tool name passed to the model' },
 				{ displayName: 'Parameters (JSON Array)', name: 'parameters', type: 'json', default: '' },
-				{ displayName: 'Server (JSON)', name: 'server', type: 'json', default: '', description: 'Full server object. Overrides Server URL.' },
 				{ displayName: 'Raw Body (JSON)', name: 'rawBody', type: 'json', default: '', description: 'Full or partial tool JSON. Top-level keys override structured tool fields.' },
+				{ displayName: 'Server (JSON)', name: 'server', type: 'json', default: '', description: 'Full server object. Overrides Server URL.' },
 			],
 		},
 		{
@@ -893,7 +897,7 @@ export function buildCallRequest(this: IExecuteFunctions, i: number, operation: 
 		const customerNumber = this.getNodeParameter('customerNumber', i, '') as string;
 		if (customerNumber) body.customer = { number: customerNumber };
 
-		mergeKnownFields(body, additionalFields, [
+		mergeKnownFields(this, body, additionalFields, [
 			'name', 'assistantId', 'phoneNumberId', 'squadId', 'workflowId',
 			'assistant', 'assistantOverrides', 'customer', 'customers', 'phoneNumber',
 			'squad', 'squadOverrides', 'workflow', 'workflowOverrides',
@@ -908,7 +912,7 @@ export function buildCallRequest(this: IExecuteFunctions, i: number, operation: 
 			body.schedulePlan = { earliestAt: schedFields.earliestAt };
 		}
 
-		return { method: 'POST', endpoint: '/call', body: mergeRawBody(body, additionalFields.rawBody) };
+		return { method: 'POST', endpoint: '/call', body: mergeRawBody(this, body, additionalFields.rawBody) };
 	}
 
 	if (operation === 'get') {
@@ -923,11 +927,11 @@ export function buildCallRequest(this: IExecuteFunctions, i: number, operation: 
 		const id = this.getNodeParameter('id', i) as string;
 		const updateFields = this.getNodeParameter('updateFields', i, {}) as IDataObject;
 		const body: IDataObject = {};
-		mergeKnownFields(body, updateFields, [
+		mergeKnownFields(this, body, updateFields, [
 			'name', 'assistantId', 'squadId', 'workflowId',
 			'assistantOverrides', 'squadOverrides', 'workflowOverrides',
 		]);
-		return { method: 'PATCH', endpoint: `/call/${id}`, body: mergeRawBody(body, updateFields.rawBody) };
+		return { method: 'PATCH', endpoint: `/call/${id}`, body: mergeRawBody(this, body, updateFields.rawBody) };
 	}
 
 	if (operation === 'deleteData') {
@@ -935,11 +939,11 @@ export function buildCallRequest(this: IExecuteFunctions, i: number, operation: 
 		const deleteDataFields = this.getNodeParameter('deleteDataFields', i, {}) as IDataObject;
 		const body: IDataObject = {};
 		if (deleteDataFields.ids) {
-			body.ids = parseJsonParameter(deleteDataFields.ids, 'Call IDs') as IDataObject[string];
+			body.ids = parseJsonParameter(this, deleteDataFields.ids, 'Call IDs') as IDataObject[string];
 		} else {
 			body.ids = [id];
 		}
-		return { method: 'DELETE', endpoint: `/call/${id}`, body: mergeRawBody(body, deleteDataFields.rawBody) };
+		return { method: 'DELETE', endpoint: `/call/${id}`, body: mergeRawBody(this, body, deleteDataFields.rawBody) };
 	}
 
 	if (operation === 'list') {
@@ -962,13 +966,13 @@ export function buildAssistantRequest(this: IExecuteFunctions, i: number, operat
 			name: this.getNodeParameter('name', i) as string,
 		};
 		addIfSet(body, 'firstMessage', this.getNodeParameter('firstMessage', i, '') as string);
-		addJsonIfSet(body, 'model', this.getNodeParameter('model', i, '') as string);
-		addJsonIfSet(body, 'voice', this.getNodeParameter('voice', i, '') as string);
-		mergeKnownFields(body, additionalFields, [
+		addJsonIfSet(this, body, 'model', this.getNodeParameter('model', i, '') as string);
+		addJsonIfSet(this, body, 'voice', this.getNodeParameter('voice', i, '') as string);
+		mergeKnownFields(this, body, additionalFields, [
 			'firstMessageMode', 'maxDurationSeconds', 'backgroundSound', 'analysisPlan',
 			'artifactPlan', 'hooks', 'metadata', 'monitorPlan', 'observabilityPlan', 'server',
 		]);
-		return { method: 'POST', endpoint: '/assistant', body: mergeRawBody(body, additionalFields.rawBody) };
+		return { method: 'POST', endpoint: '/assistant', body: mergeRawBody(this, body, additionalFields.rawBody) };
 	}
 
 	if (operation === 'get') {
@@ -983,12 +987,12 @@ export function buildAssistantRequest(this: IExecuteFunctions, i: number, operat
 		const id = this.getNodeParameter('id', i) as string;
 		const updateFields = this.getNodeParameter('updateFields', i, {}) as IDataObject;
 		const body: IDataObject = {};
-		mergeKnownFields(body, updateFields, [
+		mergeKnownFields(this, body, updateFields, [
 			'name', 'firstMessage', 'maxDurationSeconds', 'model', 'voice', 'firstMessageMode',
 			'backgroundSound', 'analysisPlan', 'artifactPlan', 'hooks', 'metadata',
 			'monitorPlan', 'observabilityPlan', 'server',
 		]);
-		return { method: 'PATCH', endpoint: `/assistant/${id}`, body: mergeRawBody(body, updateFields.rawBody) };
+		return { method: 'PATCH', endpoint: `/assistant/${id}`, body: mergeRawBody(this, body, updateFields.rawBody) };
 	}
 
 	if (operation === 'list') {
@@ -1015,7 +1019,7 @@ export function buildPhoneNumberRequest(this: IExecuteFunctions, i: number, oper
 		return {
 			method: 'POST',
 			endpoint: '/phone-number',
-			body: parseJsonParameter(this.getNodeParameter('buyFields', i, '{}'), 'Buy Fields') as IDataObject,
+			body: parseJsonParameter(this, this.getNodeParameter('buyFields', i, '{}'), 'Buy Fields') as IDataObject,
 		};
 	}
 
@@ -1023,15 +1027,15 @@ export function buildPhoneNumberRequest(this: IExecuteFunctions, i: number, oper
 		const id = this.getNodeParameter('id', i) as string;
 		const updateFields = this.getNodeParameter('updateFields', i, {}) as IDataObject;
 		const body: IDataObject = {};
-		mergeKnownFields(body, updateFields, [
+		mergeKnownFields(this, body, updateFields, [
 			'provider', 'name', 'assistantId', 'squadId', 'workflowId',
 			'fallbackDestination', 'hooks',
 		]);
 
-		const server = buildServerObject(updateFields);
+		const server = buildServerObject(this, updateFields);
 		if (server) body.server = server;
 
-		return { method: 'PATCH', endpoint: `/phone-number/${id}`, body: mergeRawBody(body, updateFields.rawBody) };
+		return { method: 'PATCH', endpoint: `/phone-number/${id}`, body: mergeRawBody(this, body, updateFields.rawBody) };
 	}
 
 	if (operation === 'delete') {
@@ -1045,11 +1049,11 @@ export function buildSquadRequest(this: IExecuteFunctions, i: number, operation:
 	if (operation === 'create') {
 		const additionalFields = this.getNodeParameter('additionalFields', i, {}) as IDataObject;
 		const body: IDataObject = {
-			members: parseJsonParameter(this.getNodeParameter('members', i) as string, 'Members') as IDataObject[string],
+			members: parseJsonParameter(this, this.getNodeParameter('members', i) as string, 'Members') as IDataObject[string],
 		};
 		addIfSet(body, 'name', this.getNodeParameter('name', i, '') as string);
-		mergeKnownFields(body, additionalFields, ['membersOverrides']);
-		return { method: 'POST', endpoint: '/squad', body: mergeRawBody(body, additionalFields.rawBody) };
+		mergeKnownFields(this, body, additionalFields, ['membersOverrides']);
+		return { method: 'POST', endpoint: '/squad', body: mergeRawBody(this, body, additionalFields.rawBody) };
 	}
 
 	if (operation === 'get') {
@@ -1064,8 +1068,8 @@ export function buildSquadRequest(this: IExecuteFunctions, i: number, operation:
 		const id = this.getNodeParameter('id', i) as string;
 		const updateFields = this.getNodeParameter('updateFields', i, {}) as IDataObject;
 		const body: IDataObject = {};
-		mergeKnownFields(body, updateFields, ['name', 'members', 'membersOverrides', 'squadOverrides']);
-		return { method: 'PATCH', endpoint: `/squad/${id}`, body: mergeRawBody(body, updateFields.rawBody) };
+		mergeKnownFields(this, body, updateFields, ['name', 'members', 'membersOverrides', 'squadOverrides']);
+		return { method: 'PATCH', endpoint: `/squad/${id}`, body: mergeRawBody(this, body, updateFields.rawBody) };
 	}
 
 	if (operation === 'list') {
@@ -1100,7 +1104,7 @@ export function buildToolRequest(this: IExecuteFunctions, i: number, operation: 
 		return {
 			method: operation === 'create' ? 'POST' : 'PATCH',
 			endpoint,
-			body: mergeRawBody(body, additionalFields.rawBody),
+			body: mergeRawBody(this, body, additionalFields.rawBody),
 		};
 	}
 
@@ -1134,8 +1138,8 @@ export async function buildFileRequest(
 		const id = this.getNodeParameter('id', i) as string;
 		const updateFields = this.getNodeParameter('updateFields', i, {}) as IDataObject;
 		const body: IDataObject = {};
-		mergeKnownFields(body, updateFields, ['name', 'metadata']);
-		return { method: 'PATCH', endpoint: `/file/${id}`, body: mergeRawBody(body, updateFields.rawBody) };
+		mergeKnownFields(this, body, updateFields, ['name', 'metadata']);
+		return { method: 'PATCH', endpoint: `/file/${id}`, body: mergeRawBody(this, body, updateFields.rawBody) };
 	}
 
 	if (operation === 'create') {
@@ -1183,9 +1187,9 @@ export async function buildFileRequest(
 
 		addIfSet(formData, 'purpose', fileFields.purpose);
 		if (fileFields.metadata) {
-			formData.metadata = JSON.stringify(parseJsonParameter(fileFields.metadata, 'Metadata'));
+			formData.metadata = JSON.stringify(parseJsonParameter(this, fileFields.metadata, 'Metadata'));
 		}
-		const rawFormFields = parseRawObject(fileFields.rawBody, 'Advanced Raw Body');
+		const rawFormFields = parseRawObject(this, fileFields.rawBody, 'Advanced Raw Body');
 		for (const [key, value] of Object.entries(rawFormFields)) {
 			formData[key] = typeof value === 'object' ? JSON.stringify(value) : value;
 		}
@@ -1206,7 +1210,7 @@ function buildToolBody(this: IExecuteFunctions, i: number, toolType: string, add
 	if (['function', 'code'].includes(normalizedToolType)) {
 		const functionDefinition = this.getNodeParameter('functionDefinition', i, '') as string;
 		if (functionDefinition) {
-			body.function = parseJsonParameter(functionDefinition, 'Function Definition') as IDataObject[string];
+			body.function = parseJsonParameter(this, functionDefinition, 'Function Definition') as IDataObject[string];
 		}
 	}
 
@@ -1228,7 +1232,7 @@ function buildToolBody(this: IExecuteFunctions, i: number, toolType: string, add
 	}
 
 	const integrationFields = this.getNodeParameter('integrationFields', i, {}) as IDataObject;
-	mergeKnownFields(body, integrationFields, [
+	mergeKnownFields(this, body, integrationFields, [
 		'credentialId', 'externalWorkflowId', 'calendarId', 'locationId',
 		'spreadsheetId', 'sheetName', 'channelId',
 	]);
@@ -1236,7 +1240,7 @@ function buildToolBody(this: IExecuteFunctions, i: number, toolType: string, add
 	if (Object.prototype.hasOwnProperty.call(additionalFields, 'async')) {
 		body.async = additionalFields.async;
 	}
-	mergeKnownFields(body, additionalFields, ['name', 'description', 'body', 'headers', 'messages', 'parameters', 'server']);
+	mergeKnownFields(this, body, additionalFields, ['name', 'description', 'body', 'headers', 'messages', 'parameters', 'server']);
 
 	return body;
 }
@@ -1255,23 +1259,23 @@ function normalizeToolType(toolType: string): string {
 	return legacyAliases[toolType] ?? toolType;
 }
 
-function buildServerObject(fields: IDataObject): IDataObject | undefined {
+function buildServerObject(context: IExecuteFunctions, fields: IDataObject): IDataObject | undefined {
 	const server: IDataObject = {};
 	addIfSet(server, 'url', fields.serverUrl);
 	addIfSet(server, 'timeoutSeconds', fields.serverTimeoutSeconds);
 	addIfSet(server, 'secret', fields.serverSecret);
 	if (fields.serverHeaders) {
-		server.headers = parseJsonParameter(fields.serverHeaders, 'Server Headers') as IDataObject[string];
+		server.headers = parseJsonParameter(context, fields.serverHeaders, 'Server Headers') as IDataObject[string];
 	}
 	return Object.keys(server).length > 0 ? server : undefined;
 }
 
-function mergeKnownFields(target: IDataObject, source: IDataObject, keys: string[]): void {
+function mergeKnownFields(context: IExecuteFunctions, target: IDataObject, source: IDataObject, keys: string[]): void {
 	for (const key of keys) {
 		const value = source[key];
 		if (value === undefined || value === null || value === '') continue;
 		if (typeof value === 'string' && looksLikeJsonField(key)) {
-			target[key] = parseJsonParameter(value, key) as IDataObject[string];
+			target[key] = parseJsonParameter(context, value, key) as IDataObject[string];
 		} else {
 			target[key] = value;
 		}
@@ -1287,35 +1291,35 @@ function looksLikeJsonField(key: string): boolean {
 	].includes(key);
 }
 
-function mergeRawBody(body: IDataObject, rawBody: unknown): IDataObject {
+function mergeRawBody(context: IExecuteFunctions, body: IDataObject, rawBody: unknown): IDataObject {
 	return {
 		...body,
-		...parseRawObject(rawBody, 'Advanced Raw Body'),
+		...parseRawObject(context, rawBody, 'Advanced Raw Body'),
 	};
 }
 
-function parseRawObject(rawBody: unknown, label: string): IDataObject {
+function parseRawObject(context: IExecuteFunctions, rawBody: unknown, label: string): IDataObject {
 	if (!rawBody) return {};
-	const parsed = parseJsonParameter(rawBody, label);
+	const parsed = parseJsonParameter(context, rawBody, label);
 	if (!isDataObject(parsed)) {
-		throw new Error(`${label} must be a JSON object.`);
+		throw new NodeOperationError(context.getNode(), `${label} must be a JSON object`);
 	}
 	return parsed;
 }
 
-function parseJsonParameter(value: unknown, label: string): unknown {
+function parseJsonParameter(context: IExecuteFunctions, value: unknown, label: string): unknown {
 	if (value === undefined || value === null || value === '') return undefined;
 	if (typeof value !== 'string') return value;
 	try {
 		return JSON.parse(value);
 	} catch (error) {
-		throw new Error(`${label} contains invalid JSON: ${(error as Error).message}`);
+		throw new NodeOperationError(context.getNode(), `${label} contains invalid JSON: ${(error as Error).message}`);
 	}
 }
 
-function addJsonIfSet(body: IDataObject, key: string, value: unknown): void {
+function addJsonIfSet(context: IExecuteFunctions, body: IDataObject, key: string, value: unknown): void {
 	if (value === undefined || value === null || value === '') return;
-	body[key] = parseJsonParameter(value, key) as IDataObject[string];
+	body[key] = parseJsonParameter(context, value, key) as IDataObject[string];
 }
 
 function addIfSet(body: IDataObject, key: string, value: unknown): void {

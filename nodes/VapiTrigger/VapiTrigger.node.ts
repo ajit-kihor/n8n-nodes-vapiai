@@ -4,6 +4,7 @@ import {
 	INodeType,
 	INodeTypeDescription,
 	IWebhookResponseData,
+	NodeConnectionTypes,
 } from 'n8n-workflow';
 
 const eventOptions = [
@@ -51,12 +52,13 @@ export class VapiTrigger implements INodeType {
 		icon: 'file:vapi.svg',
 		group: ['trigger'],
 		version: 1,
+		subtitle: '={{$parameter["events"].join(", ")}}',
 		description: 'Starts the workflow when Vapi sends a webhook event',
 		defaults: {
 			name: 'Vapi Trigger',
 		},
 		inputs: [],
-		outputs: ['main'],
+		outputs: [NodeConnectionTypes.Main],
 		webhooks: [
 			{
 				name: 'default',
@@ -87,7 +89,7 @@ export class VapiTrigger implements INodeType {
 				type: 'string',
 				default: 'x-vapi-secret',
 				displayOptions: { show: { verifySecret: [true] } },
-				description: 'Name of the HTTP header carrying the shared secret. Vapi uses X-Vapi-Secret for legacy inline secrets.',
+				description: 'Name of the HTTP header carrying the shared secret. Vapi uses X-Vapi-Secret for legacy inline secrets',
 			},
 			{
 				displayName: 'Expected Value',

@@ -3,6 +3,7 @@ import { ICredentialTestRequest, ICredentialType, INodeProperties } from 'n8n-wo
 export class VapiApi implements ICredentialType {
 	name = 'vapiApi';
 	displayName = 'Vapi API';
+	icon = 'file:vapi-icon.svg' as const;
 	documentationUrl = 'https://docs.vapi.ai/api-reference';
 	authenticate = {
 		type: 'generic' as const,
