@@ -41,8 +41,8 @@ const listLimit: INodeProperties = {
 	name: 'limit',
 	type: 'number',
 	typeOptions: { minValue: 1, maxValue: 1000 },
-	default: 100,
-	description: 'Maximum number of results to return. Vapi defaults to 100.',
+	default: 50,
+	description: 'Max number of results to return',
 };
 
 const rawBodyField: INodeProperties = {
@@ -92,7 +92,7 @@ export class Vapi implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'Vapi',
 		name: 'vapi',
-		icon: 'file:vapi-icon.svg',
+		icon: { light: 'file:vapi-icon.svg', dark: 'file:vapi-icon.dark.svg' },
 		group: ['transform'],
 		version: 1,
 		subtitle: '={{$parameter["resource"] + ": " + $parameter["operation"]}}',
@@ -207,11 +207,11 @@ export class Vapi implements INodeType {
 				noDataExpression: true,
 				displayOptions: { show: { resource: ['file'] } },
 				options: [
-					{ name: 'Upload / Create', value: 'create', description: 'Upload a file for knowledge bases and assistant artifacts', action: 'Upload a file' },
 					{ name: 'Delete', value: 'delete', description: 'Delete a file', action: 'Delete a file' },
 					{ name: 'Get', value: 'get', description: 'Get a file by ID', action: 'Get a file' },
 					{ name: 'List', value: 'list', description: 'List files', action: 'List files' },
 					{ name: 'Update', value: 'update', description: 'Update mutable file fields', action: 'Update a file' },
+					{ name: 'Upload / Create', value: 'create', description: 'Upload a file for knowledge bases and assistant artifacts', action: 'Upload a file' },
 				],
 				default: 'list',
 			},
@@ -223,6 +223,7 @@ export class Vapi implements INodeType {
 			...toolProperties(),
 			...fileProperties(),
 		],
+		usableAsTool: true,
 	};
 
 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
@@ -255,7 +256,7 @@ export class Vapi implements INodeType {
 				} else if (resource === 'file') {
 					request = await buildFileRequest.call(this, i, operation, items[i]);
 				} else {
-					throw new NodeOperationError(this.getNode(), `Unknown resource: ${resource}`);
+					throw new NodeOperationError(this.getNode(), `Unknown resource: ${resource}`, { itemIndex: i });
 				}
 
 				const headers: IDataObject = {
@@ -289,7 +290,7 @@ export class Vapi implements INodeType {
 					continue;
 				}
 				if (error instanceof NodeOperationError) {
-					throw error;
+					throw new NodeOperationError(this.getNode(), error.message, { itemIndex: i });
 				}
 				throw new NodeApiError(this.getNode(), error as JsonObject, { itemIndex: i });
 			}
@@ -343,7 +344,7 @@ function callProperties(): INodeProperties[] {
 							name: 'earliestAt',
 							type: 'dateTime',
 							default: '',
-							description: 'Earliest time to initiate the call as an ISO 8601 date-time.',
+							description: 'Earliest time to initiate the call as an ISO 8601 date-time',
 						},
 					],
 				},
@@ -357,18 +358,18 @@ function callProperties(): INodeProperties[] {
 			default: {},
 			displayOptions: { show: { resource: ['call'], operation: ['create'] } },
 			options: [
-				{ displayName: 'Name', name: 'name', type: 'string', default: '', description: 'Optional call name for your own reference.' },
-				{ displayName: 'Assistant (JSON)', name: 'assistant', type: 'json', default: '', description: 'Transient assistant object for this call.' },
-				{ displayName: 'Assistant Overrides (JSON)', name: 'assistantOverrides', type: 'json', default: '', description: 'Assistant-level overrides for this call.' },
+				{ displayName: 'Assistant (JSON)', name: 'assistant', type: 'json', default: '', description: 'Transient assistant object for this call' },
+				{ displayName: 'Assistant Overrides (JSON)', name: 'assistantOverrides', type: 'json', default: '', description: 'Assistant-level overrides for this call' },
 				{ displayName: 'Customer (JSON)', name: 'customer', type: 'json', default: '', description: 'Full customer object. Overrides Customer Number when set.' },
-				{ displayName: 'Customers (JSON Array)', name: 'customers', type: 'json', default: '', description: 'Array of customer objects for batch outbound calls.' },
-				{ displayName: 'Phone Number (JSON)', name: 'phoneNumber', type: 'json', default: '', description: 'Transient phone number object.' },
-				{ displayName: 'Squad ID', name: 'squadId', type: 'string', default: '', description: 'Squad to use instead of a single assistant.' },
-				{ displayName: 'Squad (JSON)', name: 'squad', type: 'json', default: '', description: 'Transient squad object for this call.' },
-				{ displayName: 'Squad Overrides (JSON)', name: 'squadOverrides', type: 'json', default: '', description: 'Squad-level overrides for this call.' },
-				{ displayName: 'Workflow ID', name: 'workflowId', type: 'string', default: '', description: 'Workflow to use for this call.' },
-				{ displayName: 'Workflow (JSON)', name: 'workflow', type: 'json', default: '', description: 'Transient workflow object for this call.' },
-				{ displayName: 'Workflow Overrides (JSON)', name: 'workflowOverrides', type: 'json', default: '', description: 'Workflow-level overrides for this call.' },
+				{ displayName: 'Customers (JSON Array)', name: 'customers', type: 'json', default: '', description: 'Array of customer objects for batch outbound calls' },
+				{ displayName: 'Name', name: 'name', type: 'string', default: '', description: 'Optional call name for your own reference' },
+				{ displayName: 'Phone Number (JSON)', name: 'phoneNumber', type: 'json', default: '', description: 'Transient phone number object' },
+				{ displayName: 'Squad (JSON)', name: 'squad', type: 'json', default: '', description: 'Transient squad object for this call' },
+				{ displayName: 'Squad ID', name: 'squadId', type: 'string', default: '', description: 'Squad to use instead of a single assistant' },
+				{ displayName: 'Squad Overrides (JSON)', name: 'squadOverrides', type: 'json', default: '', description: 'Squad-level overrides for this call' },
+				{ displayName: 'Workflow (JSON)', name: 'workflow', type: 'json', default: '', description: 'Transient workflow object for this call' },
+				{ displayName: 'Workflow ID', name: 'workflowId', type: 'string', default: '', description: 'Workflow to use for this call' },
+				{ displayName: 'Workflow Overrides (JSON)', name: 'workflowOverrides', type: 'json', default: '', description: 'Workflow-level overrides for this call' },
 				rawBodyField,
 			],
 		},
@@ -381,12 +382,12 @@ function callProperties(): INodeProperties[] {
 			default: {},
 			displayOptions: { show: { resource: ['call'], operation: ['update'] } },
 			options: [
-				{ displayName: 'Name', name: 'name', type: 'string', default: '', description: 'Mutable call name supported by the current Vapi OpenAPI schema.' },
 				{ displayName: 'Assistant ID', name: 'assistantId', type: 'string', default: '', description: 'Advanced routing field. Include only if supported by your Vapi account/API version.' },
-				{ displayName: 'Squad ID', name: 'squadId', type: 'string', default: '', description: 'Advanced routing field. Include only if supported by your Vapi account/API version.' },
-				{ displayName: 'Workflow ID', name: 'workflowId', type: 'string', default: '', description: 'Advanced routing field. Include only if supported by your Vapi account/API version.' },
 				{ displayName: 'Assistant Overrides (JSON)', name: 'assistantOverrides', type: 'json', default: '' },
+				{ displayName: 'Name', name: 'name', type: 'string', default: '', description: 'Mutable call name supported by the current Vapi OpenAPI schema' },
+				{ displayName: 'Squad ID', name: 'squadId', type: 'string', default: '', description: 'Advanced routing field. Include only if supported by your Vapi account/API version.' },
 				{ displayName: 'Squad Overrides (JSON)', name: 'squadOverrides', type: 'json', default: '' },
+				{ displayName: 'Workflow ID', name: 'workflowId', type: 'string', default: '', description: 'Advanced routing field. Include only if supported by your Vapi account/API version.' },
 				{ displayName: 'Workflow Overrides (JSON)', name: 'workflowOverrides', type: 'json', default: '' },
 				rawBodyField,
 			],
@@ -439,7 +440,7 @@ function assistantProperties(): INodeProperties[] {
 			default: '',
 			required: true,
 			displayOptions: { show: { resource: ['assistant'], operation: ['create'] } },
-			description: 'Name of the assistant.',
+			description: 'Name of the assistant',
 		},
 		{
 			displayName: 'First Message',
@@ -447,7 +448,7 @@ function assistantProperties(): INodeProperties[] {
 			type: 'string',
 			default: '',
 			displayOptions: { show: { resource: ['assistant'], operation: ['create'] } },
-			description: 'Opening message the assistant speaks at the start of the call.',
+			description: 'Opening message the assistant speaks at the start of the call',
 		},
 		{
 			displayName: 'Model (JSON)',
@@ -455,7 +456,7 @@ function assistantProperties(): INodeProperties[] {
 			type: 'json',
 			default: '{"provider":"openai","model":"gpt-4o","temperature":0.7}',
 			displayOptions: { show: { resource: ['assistant'], operation: ['create'] } },
-			description: 'LLM model configuration object.',
+			description: 'LLM model configuration object',
 		},
 		{
 			displayName: 'Voice (JSON)',
@@ -463,7 +464,7 @@ function assistantProperties(): INodeProperties[] {
 			type: 'json',
 			default: '{"provider":"11labs","voiceId":"rachel"}',
 			displayOptions: { show: { resource: ['assistant'], operation: ['create'] } },
-			description: 'Voice provider configuration object.',
+			description: 'Voice provider configuration object',
 		},
 		{
 			displayName: 'Additional Fields',
@@ -483,10 +484,10 @@ function assistantProperties(): INodeProperties[] {
 			default: {},
 			displayOptions: { show: { resource: ['assistant'], operation: ['update'] } },
 			options: [
-				{ displayName: 'Name', name: 'name', type: 'string', default: '' },
 				{ displayName: 'First Message', name: 'firstMessage', type: 'string', default: '' },
 				{ displayName: 'Max Duration (Seconds)', name: 'maxDurationSeconds', type: 'number', default: 600 },
 				{ displayName: 'Model (JSON)', name: 'model', type: 'json', default: '' },
+				{ displayName: 'Name', name: 'name', type: 'string', default: '' },
 				{ displayName: 'Voice (JSON)', name: 'voice', type: 'json', default: '' },
 				...assistantAdvancedFields(),
 			],
@@ -522,13 +523,13 @@ function assistantAdvancedFields(): INodeProperties[] {
 			],
 			default: 'off',
 		},
-		{ displayName: 'Analysis Plan (JSON)', name: 'analysisPlan', type: 'json', default: '', description: 'Analysis configuration such as summary, structured data, and success evaluation plans.' },
-		{ displayName: 'Artifact Plan (JSON)', name: 'artifactPlan', type: 'json', default: '', description: 'Artifact generation configuration such as recordings, transcripts, and logs.' },
-		{ displayName: 'Hooks (JSON Array)', name: 'hooks', type: 'json', default: '', description: 'Assistant hooks array, including speech, elapsed-time, SIP, DTMF, and other current Vapi hook types.' },
-		{ displayName: 'Metadata (JSON)', name: 'metadata', type: 'json', default: '', description: 'Custom metadata object.' },
-		{ displayName: 'Monitor Plan (JSON)', name: 'monitorPlan', type: 'json', default: '', description: 'Monitoring configuration for live call monitoring and issue detection.' },
-		{ displayName: 'Observability Plan (JSON)', name: 'observabilityPlan', type: 'json', default: '', description: 'Observability and scorecard-related configuration.' },
-		{ displayName: 'Server (JSON)', name: 'server', type: 'json', default: '', description: 'Webhook server object for assistant-level server messages.' },
+		{ displayName: 'Analysis Plan (JSON)', name: 'analysisPlan', type: 'json', default: '', description: 'Analysis configuration such as summary, structured data, and success evaluation plans' },
+		{ displayName: 'Artifact Plan (JSON)', name: 'artifactPlan', type: 'json', default: '', description: 'Artifact generation configuration such as recordings, transcripts, and logs' },
+		{ displayName: 'Hooks (JSON Array)', name: 'hooks', type: 'json', default: '', description: 'Assistant hooks array, including speech, elapsed-time, SIP, DTMF, and other current Vapi hook types' },
+		{ displayName: 'Metadata (JSON)', name: 'metadata', type: 'json', default: '', description: 'Custom metadata object' },
+		{ displayName: 'Monitor Plan (JSON)', name: 'monitorPlan', type: 'json', default: '', description: 'Monitoring configuration for live call monitoring and issue detection' },
+		{ displayName: 'Observability Plan (JSON)', name: 'observabilityPlan', type: 'json', default: '', description: 'Observability and scorecard-related configuration' },
+		{ displayName: 'Server (JSON)', name: 'server', type: 'json', default: '', description: 'Webhook server object for assistant-level server messages' },
 		rawBodyField,
 	];
 }
@@ -553,17 +554,17 @@ function phoneNumberProperties(): INodeProperties[] {
 			default: {},
 			displayOptions: { show: { resource: ['phoneNumber'], operation: ['update'] } },
 			options: [
-				{ displayName: 'Provider', name: 'provider', type: 'options', options: providerOptions, default: 'twilio', description: 'Phone number provider shape to update.' },
-				{ displayName: 'Name', name: 'name', type: 'string', default: '' },
-				{ displayName: 'Assistant ID', name: 'assistantId', type: 'string', default: '', description: 'Assistant to attach for inbound calls.' },
-				{ displayName: 'Squad ID', name: 'squadId', type: 'string', default: '', description: 'Squad to attach for inbound calls.' },
-				{ displayName: 'Workflow ID', name: 'workflowId', type: 'string', default: '', description: 'Workflow to attach for inbound calls.' },
-				{ displayName: 'Server URL', name: 'serverUrl', type: 'string', default: '', placeholder: 'https://example.com/vapi-webhook', description: 'Webhook target for inbound call server messages.' },
-				{ displayName: 'Server Timeout Seconds', name: 'serverTimeoutSeconds', type: 'number', default: 20 },
-				{ displayName: 'Server Secret', name: 'serverSecret', type: 'string', typeOptions: { password: true }, default: '', description: 'Secret value your server can validate.' },
-				{ displayName: 'Server Headers (JSON)', name: 'serverHeaders', type: 'json', default: '', description: 'Headers object Vapi should send to the webhook server.' },
+				{ displayName: 'Assistant ID', name: 'assistantId', type: 'string', default: '', description: 'Assistant to attach for inbound calls' },
 				{ displayName: 'Fallback Destination (JSON)', name: 'fallbackDestination', type: 'json', default: '' },
 				{ displayName: 'Hooks (JSON Array)', name: 'hooks', type: 'json', default: '' },
+				{ displayName: 'Name', name: 'name', type: 'string', default: '' },
+				{ displayName: 'Provider', name: 'provider', type: 'options', options: providerOptions, default: 'twilio', description: 'Phone number provider shape to update' },
+				{ displayName: 'Server Headers (JSON)', name: 'serverHeaders', type: 'json', default: '', description: 'Headers object Vapi should send to the webhook server' },
+				{ displayName: 'Server Secret', name: 'serverSecret', type: 'string', typeOptions: { password: true }, default: '', description: 'Secret value your server can validate' },
+				{ displayName: 'Server Timeout Seconds', name: 'serverTimeoutSeconds', type: 'number', default: 20 },
+				{ displayName: 'Server URL', name: 'serverUrl', type: 'string', default: '', placeholder: 'https://example.com/vapi-webhook', description: 'Webhook target for inbound call server messages' },
+				{ displayName: 'Squad ID', name: 'squadId', type: 'string', default: '', description: 'Squad to attach for inbound calls' },
+				{ displayName: 'Workflow ID', name: 'workflowId', type: 'string', default: '', description: 'Workflow to attach for inbound calls' },
 				rawBodyField,
 			],
 		},
@@ -583,7 +584,7 @@ function squadProperties(): INodeProperties[] {
 			type: 'string',
 			default: '',
 			displayOptions: { show: { resource: ['squad'], operation: ['create'] } },
-			description: 'Optional squad name.',
+			description: 'Optional squad name',
 		},
 		{
 			displayName: 'Members (JSON Array)',
@@ -602,7 +603,7 @@ function squadProperties(): INodeProperties[] {
 			default: {},
 			displayOptions: { show: { resource: ['squad'], operation: ['create'] } },
 			options: [
-				{ displayName: 'Members Overrides (JSON)', name: 'membersOverrides', type: 'json', default: '', description: 'Overrides shared across squad members.' },
+				{ displayName: 'Members Overrides (JSON)', name: 'membersOverrides', type: 'json', default: '', description: 'Overrides shared across squad members' },
 				rawBodyField,
 			],
 		},
@@ -618,7 +619,7 @@ function squadProperties(): INodeProperties[] {
 				{ displayName: 'Name', name: 'name', type: 'string', default: '' },
 				{ displayName: 'Members (JSON Array)', name: 'members', type: 'json', default: '' },
 				{ displayName: 'Members Overrides (JSON)', name: 'membersOverrides', type: 'json', default: '' },
-				{ displayName: 'Squad Overrides (JSON)', name: 'squadOverrides', type: 'json', default: '', description: 'Convenience field merged into the request for advanced squad routing.' },
+				{ displayName: 'Squad Overrides (JSON)', name: 'squadOverrides', type: 'json', default: '', description: 'Convenience field merged into the request for advanced squad routing' },
 				rawBodyField,
 			],
 		},
@@ -648,7 +649,7 @@ function toolProperties(): INodeProperties[] {
 			default: '',
 			required: true,
 			displayOptions: { show: { resource: ['tool'], operation: ['get', 'delete', 'update'] } },
-			description: 'ID of the tool.',
+			description: 'ID of the tool',
 		},
 		{
 			displayName: 'Function Definition (JSON)',
@@ -656,7 +657,7 @@ function toolProperties(): INodeProperties[] {
 			type: 'json',
 			default: '{"name":"get_weather","description":"Get current weather for a location","parameters":{"type":"object","properties":{"location":{"type":"string","description":"City name"}},"required":["location"]}}',
 			displayOptions: { show: { resource: ['tool'], operation: ['create', 'update'], toolType: ['function', 'code'] } },
-			description: 'Function schema using JSON Schema semantics.',
+			description: 'Function schema using JSON Schema semantics',
 		},
 		{
 			displayName: 'Server URL',
@@ -664,7 +665,7 @@ function toolProperties(): INodeProperties[] {
 			type: 'string',
 			default: '',
 			displayOptions: { show: { resource: ['tool'], operation: ['create', 'update'], toolType: ['function'] } },
-			description: 'Webhook server URL for tool-calls messages.',
+			description: 'Webhook server URL for tool-calls messages',
 		},
 		{
 			displayName: 'HTTP Method',
@@ -673,7 +674,7 @@ function toolProperties(): INodeProperties[] {
 			options: ['POST', 'GET', 'PUT', 'PATCH', 'DELETE'].map((value) => ({ name: value, value })),
 			default: 'POST',
 			displayOptions: { show: { resource: ['tool'], operation: ['create', 'update'], toolType: ['apiRequest'] } },
-			description: 'HTTP method used by the API request tool.',
+			description: 'HTTP method used by the API request tool',
 		},
 		{
 			displayName: 'Request URL',
@@ -683,7 +684,7 @@ function toolProperties(): INodeProperties[] {
 			required: true,
 			placeholder: 'https://api.example.com/resource',
 			displayOptions: { show: { resource: ['tool'], operation: ['create', 'update'], toolType: ['apiRequest'] } },
-			description: 'URL called by the API request tool.',
+			description: 'URL called by the API request tool',
 		},
 		{
 			displayName: 'Code (TypeScript)',
@@ -692,7 +693,7 @@ function toolProperties(): INodeProperties[] {
 			typeOptions: { rows: 12 },
 			default: 'export default async function handler(args: unknown) {\n\treturn { ok: true, args };\n}',
 			displayOptions: { show: { resource: ['tool'], operation: ['create', 'update'], toolType: ['code'] } },
-			description: 'TypeScript code to execute on Vapi infrastructure.',
+			description: 'TypeScript code to execute on Vapi infrastructure',
 		},
 		{
 			displayName: 'Timeout Seconds',
@@ -733,13 +734,13 @@ function toolProperties(): INodeProperties[] {
 				},
 			},
 			options: [
-				{ displayName: 'Credential ID', name: 'credentialId', type: 'string', default: '' },
-				{ displayName: 'External Scenario/Workflow ID', name: 'externalWorkflowId', type: 'string', default: '', description: 'Make scenario ID, GHL workflow ID, or similar external workflow identifier when used by the integration.' },
 				{ displayName: 'Calendar ID', name: 'calendarId', type: 'string', default: '' },
+				{ displayName: 'Credential ID', name: 'credentialId', type: 'string', default: '' },
+				{ displayName: 'External Scenario/Workflow ID', name: 'externalWorkflowId', type: 'string', default: '', description: 'Make scenario ID, GHL workflow ID, or similar external workflow identifier when used by the integration' },
 				{ displayName: 'Location ID', name: 'locationId', type: 'string', default: '' },
-				{ displayName: 'Spreadsheet ID', name: 'spreadsheetId', type: 'string', default: '' },
 				{ displayName: 'Sheet Name', name: 'sheetName', type: 'string', default: '' },
 				{ displayName: 'Slack Channel ID', name: 'channelId', type: 'string', default: '' },
+				{ displayName: 'Spreadsheet ID', name: 'spreadsheetId', type: 'string', default: '' },
 			],
 		},
 		{
@@ -791,7 +792,7 @@ function fileProperties(): INodeProperties[] {
 			default: 'data',
 			required: true,
 			displayOptions: { show: { resource: ['file'], operation: ['create'], uploadSource: ['binary'] } },
-			description: 'Input binary property containing the file to upload.',
+			description: 'Input binary property containing the file to upload',
 		},
 		{
 			displayName: 'File URL',
@@ -800,7 +801,7 @@ function fileProperties(): INodeProperties[] {
 			default: '',
 			required: true,
 			displayOptions: { show: { resource: ['file'], operation: ['create'], uploadSource: ['url'] } },
-			description: 'URL to download and upload to Vapi as a file.',
+			description: 'URL to download and upload to Vapi as a file',
 		},
 		{
 			displayName: 'Text Content',
@@ -810,7 +811,7 @@ function fileProperties(): INodeProperties[] {
 			default: '',
 			required: true,
 			displayOptions: { show: { resource: ['file'], operation: ['create'], uploadSource: ['text'] } },
-			description: 'Text content to upload as a file.',
+			description: 'Text content to upload as a file',
 		},
 		{
 			displayName: 'File Fields',
@@ -820,9 +821,9 @@ function fileProperties(): INodeProperties[] {
 			default: {},
 			displayOptions: { show: { resource: ['file'], operation: ['create'] } },
 			options: [
-				{ displayName: 'File Name', name: 'name', type: 'string', default: 'vapi-upload.txt', description: 'File name sent in the multipart upload.' },
-				{ displayName: 'MIME Type', name: 'mimetype', type: 'string', default: 'text/plain', description: 'MIME type for text or URL uploads when not known from binary metadata.' },
-				{ displayName: 'Purpose', name: 'purpose', type: 'string', default: 'knowledge_base_upload', description: 'Optional purpose metadata for the uploaded file.' },
+				{ displayName: 'File Name', name: 'name', type: 'string', default: 'vapi-upload.txt', description: 'File name sent in the multipart upload' },
+				{ displayName: 'MIME Type', name: 'mimetype', type: 'string', default: 'text/plain', description: 'MIME type for text or URL uploads when not known from binary metadata' },
+				{ displayName: 'Purpose', name: 'purpose', type: 'string', default: 'knowledge_base_upload', description: 'Optional purpose metadata for the uploaded file' },
 				{ displayName: 'Metadata (JSON)', name: 'metadata', type: 'json', default: '' },
 				rawBodyField,
 			],
@@ -837,7 +838,7 @@ function fileProperties(): INodeProperties[] {
 			displayOptions: { show: { resource: ['file'], operation: ['update'] } },
 			options: [
 				{ displayName: 'Name', name: 'name', type: 'string', default: '', description: 'File display name. Current Vapi schema allows 1-40 characters.' },
-				{ displayName: 'Metadata (JSON)', name: 'metadata', type: 'json', default: '', description: 'Advanced metadata if supported by your Vapi account/API version.' },
+				{ displayName: 'Metadata (JSON)', name: 'metadata', type: 'json', default: '', description: 'Advanced metadata if supported by your Vapi account/API version' },
 				rawBodyField,
 			],
 		},
@@ -869,7 +870,7 @@ function idField(displayName: string, name: string, resources: string[], operati
 		default: '',
 		required: true,
 		displayOptions: { show: { resource: resources, operation: operations } },
-		description: `The Vapi ${displayName.toLowerCase()}.`,
+		description: 'The Vapi ,',
 	};
 }
 

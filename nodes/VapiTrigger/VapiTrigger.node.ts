@@ -49,7 +49,7 @@ export class VapiTrigger implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'Vapi Trigger',
 		name: 'vapiTrigger',
-		icon: 'file:vapi.svg',
+		icon: { light: 'file:vapi.svg', dark: 'file:vapi.dark.svg' },
 		group: ['trigger'],
 		version: 1,
 		subtitle: '={{$parameter["events"].join(", ")}}',
@@ -85,11 +85,11 @@ export class VapiTrigger implements INodeType {
 			},
 			{
 				displayName: 'Header Name',
-				name: 'secretHeaderName',
+				name: 'verificationHeaderName',
 				type: 'string',
 				default: 'x-vapi-secret',
 				displayOptions: { show: { verifySecret: [true] } },
-				description: 'Name of the HTTP header carrying the shared secret. Vapi uses X-Vapi-Secret for legacy inline secrets',
+				description: 'Name of the HTTP header carrying the shared secret. Vapi uses X-Vapi-Secret for legacy inline secrets.',
 			},
 			{
 				displayName: 'Expected Value',
@@ -98,9 +98,10 @@ export class VapiTrigger implements INodeType {
 				typeOptions: { password: true },
 				default: '',
 				displayOptions: { show: { verifySecret: [true] } },
-				description: 'Expected value of the secret header.',
+				description: 'Expected value of the secret header',
 			},
 		],
+		usableAsTool: true,
 	};
 
 	webhookMethods = {
@@ -124,7 +125,8 @@ export class VapiTrigger implements INodeType {
 		const verifySecret = this.getNodeParameter('verifySecret', false) as boolean;
 
 		if (verifySecret) {
-			const headerName = (this.getNodeParameter('secretHeaderName', 'x-vapi-secret') as string).toLowerCase();
+			const legacyHeaderName = this.getNodeParameter('secretHeaderName', 'x-vapi-secret') as string;
+			const headerName = (this.getNodeParameter('verificationHeaderName', legacyHeaderName) as string).toLowerCase();
 			const expected = this.getNodeParameter('secretHeaderValue', '') as string;
 			const actual = req.headers[headerName] as string | string[] | undefined;
 

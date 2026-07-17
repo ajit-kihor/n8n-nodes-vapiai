@@ -33,8 +33,12 @@ function getResourceOperations(node, resource) {
 }
 
 const vapi = new Vapi();
-assert.strictEqual(vapi.description.icon, 'file:vapi-icon.svg');
+assert.deepStrictEqual(vapi.description.icon, {
+	light: 'file:vapi-icon.svg',
+	dark: 'file:vapi-icon.dark.svg',
+});
 assert.strictEqual(new VapiApi().icon, 'file:vapi-icon.svg');
+assert.strictEqual(vapi.description.usableAsTool, true);
 assert(getResourceOperations(vapi, 'call').includes('update'));
 assert(getResourceOperations(vapi, 'call').includes('deleteData'));
 assert(getResourceOperations(vapi, 'phoneNumber').includes('update'));
@@ -135,7 +139,11 @@ Promise.resolve(fileUpdate).then((request) => {
 	assert.strictEqual(legacySlackTool.body.type, 'slack.message.send');
 
 	const trigger = new VapiTrigger();
-	assert.strictEqual(trigger.description.icon, 'file:vapi.svg');
+	assert.deepStrictEqual(trigger.description.icon, {
+		light: 'file:vapi.svg',
+		dark: 'file:vapi.dark.svg',
+	});
+	assert.strictEqual(trigger.description.usableAsTool, true);
 	assert.strictEqual(trigger.description.subtitle, '={{$parameter["events"].join(", ")}}');
 	const eventProperty = trigger.description.properties.find((property) => property.name === 'events');
 	const eventValues = eventProperty.options.map((option) => option.value);
@@ -143,7 +151,7 @@ Promise.resolve(fileUpdate).then((request) => {
 	assert(eventValues.includes('workflow.node.started'));
 	assert(eventValues.includes('transfer-update'));
 	assert(eventValues.includes('call.deleted'));
-	const secretHeaderProperty = trigger.description.properties.find((property) => property.name === 'secretHeaderName');
+	const secretHeaderProperty = trigger.description.properties.find((property) => property.name === 'verificationHeaderName');
 	assert.strictEqual(secretHeaderProperty.default, 'x-vapi-secret');
 	const secretValueProperty = trigger.description.properties.find((property) => property.name === 'secretHeaderValue');
 	assert.strictEqual(secretValueProperty.typeOptions.password, true);
