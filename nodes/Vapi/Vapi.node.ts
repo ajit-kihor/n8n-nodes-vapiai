@@ -870,7 +870,7 @@ function idField(displayName: string, name: string, resources: string[], operati
 		default: '',
 		required: true,
 		displayOptions: { show: { resource: resources, operation: operations } },
-		description: 'The Vapi ,',
+		description: `The Vapi ${displayName.toLowerCase()}`,
 	};
 }
 

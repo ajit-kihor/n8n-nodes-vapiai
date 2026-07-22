@@ -45,6 +45,14 @@ assert(getResourceOperations(vapi, 'phoneNumber').includes('update'));
 assert(getResourceOperations(vapi, 'file').includes('create'));
 assert(getResourceOperations(vapi, 'file').includes('delete'));
 
+for (const displayName of ['Call ID', 'Assistant ID', 'Phone Number ID', 'Squad ID', 'File ID']) {
+	const idProperty = vapi.description.properties.find(
+		(property) => property.displayName === displayName && property.name === 'id',
+	);
+	assert(idProperty, `Missing ${displayName} property`);
+	assert.strictEqual(idProperty.description, `The Vapi ${displayName.toLowerCase()}`);
+}
+
 const callUpdate = buildCallRequest.call(fakeContext({
 	id: 'call-id',
 	updateFields: {
